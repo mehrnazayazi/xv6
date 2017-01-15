@@ -92,7 +92,7 @@ sys_uptime(void)
 int
 sys_getyear(void)
 {
-    int *wtime;
+    /*int *wtime;
   int *rtime;
   
   if(argptr(0, (char**)&wtime, sizeof(int)) < 0)
@@ -102,7 +102,16 @@ sys_getyear(void)
     return -1;
 	
 int a = waitx(wtime, rtime);
-	 return a;
+	 return a;*/
+
+
+char *wtime;
+char *rtime;
+argstr(0,&wtime);
+argstr(1,&rtime);
+*wtime = ticks - proc->ctime - proc->rtime;
+*rtime = proc->rtime;
+return 0;
 
 
 

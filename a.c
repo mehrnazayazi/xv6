@@ -25,25 +25,26 @@ foo()
      printf(2, "wait test %d\n",i);
 
 }
-
-void
+void 
 waittest(void)
 {
-  int wTime;
-  int rTime;
-  int pid;
-  printf(1, "wait test\n");
+int wTime;
+int rTime;
+int pid;
+printf(1, "wait test\n");
 
 
-    pid = fork();
-    if(pid == 0)
-    {
-      foo();
-      exit();      
-    }
-    getyear(&wTime,&rTime);
-     printf(1, "hi \n");
-    printf(1, "wTime: %d rTime: %d \n",wTime,rTime);
+pid = fork();
+if(pid == 0)
+{
+foo();
+getyear(&wTime,&rTime);
+printf(1, "hi \n");
+printf(1, "wTime: %d rTime: %d \n",wTime,rTime);
+exit();
+}
+wait();
+
 
 }
 int
