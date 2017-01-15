@@ -327,6 +327,7 @@ scheduler(void)
     sti();
 
     // Loop over process table looking for process to run.
+    if(SCHEDFLAG == 1){
     acquire(&ptable.lock);
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE || ticks%QUANTA!=0)
@@ -346,7 +347,10 @@ scheduler(void)
       proc = 0;
     }
     release(&ptable.lock);
-
+    }
+    if(SCHEDFLAG == 2){
+	
+    }
   }
 }
 
