@@ -27,6 +27,9 @@ struct proc* popq(){
 qend--;
 	return p;
 }
+struct proc* qfront(){
+    return q[0];
+}
 
 static struct proc *initproc;
 
@@ -372,26 +375,30 @@ scheduler(void)
     }
     if(SCHEDFLAG == 2){
         acquire(&ptable.lock);
+         for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+            if(p->state != RUNNABLE || ticks%QUANTA!=0)
+                continue;
         p=popq();
-        while(p->state!=RUNNABLE){
-            pushq(p);
-            p=popq();
-        }
+
 
 
 
         proc = p;
         switchuvm(p);
         p->state = RUNNING;
+         pushq(p);
         swtch(&cpu->scheduler, p->context);
         switchkvm();
       // Process is done running for now.
       // It should have changed its p->state before coming back.
         proc = 0;
-        pushq(p);
+
+
+         }
          release(&ptable.lock);
 
     }
+
   }
 }
 
