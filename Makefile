@@ -70,6 +70,15 @@ QEMU = $(shell if which qemu > /dev/null; \
 	echo "***" 1>&2; exit 1)
 endif
 
+
+
+#can be defined deferntly when running make from console - will create a kernel with different schdualing policy
+ifndef SCHEDFLAG
+SCHEDFLAG := DEFAULT
+endif
+
+
+
 CC = $(TOOLPREFIX)gcc
 AS = $(TOOLPREFIX)gas
 LD = $(TOOLPREFIX)ld

@@ -12,6 +12,22 @@ struct {
   struct proc proc[NPROC];
 } ptable;
 
+struct proc* q[64];
+int qend=0;
+void pushq(struct proc *p){
+	q[qend]=p;
+	qend++;
+}
+struct proc* popq(){
+	struct proc *p=q[0];
+	for(int i=1;i<qend;i++){
+		q[i-1]=q[i];
+
+	}
+qend--;
+	return p;
+}
+
 static struct proc *initproc;
 
 int nextpid = 1;
@@ -75,7 +91,10 @@ found:
 	 p->ctime = ticks;         // start time
   p->etime = 0;             // end time
   p->rtime = 0;             // run time
- 
+	pushq(p);
+
+
+
 
   return p;
 }
@@ -89,7 +108,7 @@ userinit(void)
   extern char _binary_initcode_start[], _binary_initcode_size[];
 
   p = allocproc();
-  
+
   initproc = p;
   if((p->pgdir = setupkvm()) == 0)
     panic("userinit: out of memory?");
@@ -114,6 +133,7 @@ userinit(void)
   acquire(&ptable.lock);
 
   p->state = RUNNABLE;
+  pushq(p);
 
   release(&ptable.lock);
 }
@@ -178,6 +198,7 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
+  pushq(np);
 
   release(&ptable.lock);
 
@@ -292,7 +313,7 @@ waitx(int *wtime, int *rtime)
         *wtime = p->etime - p->ctime - p->rtime;
         *rtime = p->rtime;
 
-        // same as wait 
+        // same as wait
         pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
@@ -337,6 +358,7 @@ scheduler(void)
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
       proc = p;
+
       switchuvm(p);
       p->state = RUNNING;
       swtch(&cpu->scheduler, p->context);
@@ -349,10 +371,30 @@ scheduler(void)
     release(&ptable.lock);
     }
     if(SCHEDFLAG == 2){
-	
+        acquire(&ptable.lock);
+        p=popq();
+        while(p->state!=RUNNABLE){
+            pushq(p);
+            p=popq();
+        }
+
+
+
+        proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
+        swtch(&cpu->scheduler, p->context);
+        switchkvm();
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+        proc = 0;
+        pushq(p);
+         release(&ptable.lock);
+
     }
   }
 }
+
 
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state. Saves and restores
@@ -385,6 +427,7 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
   proc->state = RUNNABLE;
+  pushq(proc);
   sched();
   release(&ptable.lock);
 }
@@ -458,6 +501,7 @@ wakeup1(void *chan)
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == SLEEPING && p->chan == chan)
       p->state = RUNNABLE;
+      pushq(p);
 }
 
 // Wake up all processes sleeping on chan.
@@ -482,8 +526,10 @@ kill(int pid)
     if(p->pid == pid){
       p->killed = 1;
       // Wake process from sleep if necessary.
-      if(p->state == SLEEPING)
+      if(p->state == SLEEPING){
         p->state = RUNNABLE;
+        pushq(p);
+        }
       release(&ptable.lock);
       return 0;
     }
