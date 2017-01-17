@@ -119,7 +119,7 @@ return 0;
 
 
 }
-int SYS_nice(void){
+int sys_nice(void){
     if(proc->p_level==high){
         proc->p_level=middle;
         return 0;
