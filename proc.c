@@ -90,6 +90,8 @@ struct proc* peek1() {
    return q1[front1];
 }
 
+
+
 bool isEmpty1() {
    return itemCount1 == 0;
 }
@@ -100,6 +102,16 @@ bool isFull1() {
 
 int size1() {
    return itemCount1;
+}
+
+
+bool isIncluded1(struct proc* p){
+    int i;
+    for(i=0;i<size1();i++){
+        if(p==q1[i])
+            return true;
+    }
+    return false;
 }
 
 void insert1(struct proc* data) {
@@ -332,6 +344,13 @@ userinit(void)
   acquire(&ptable.lock);
 
   p->state = RUNNABLE;
+  if(p->p_level == high){
+    insert1(p);
+  }else if(p->p_level == middle){
+      insert2(p);
+  }else{
+      insert3(p);
+  }
   insert(p);
 
   release(&ptable.lock);
@@ -397,6 +416,13 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
+  if(np->p_level == high){
+    insert1(np);
+  }else if(np->p_level == middle){
+      insert2(np);
+  }else{
+      insert3(np);
+  }
   insert(np);
 
   release(&ptable.lock);
@@ -510,30 +536,59 @@ scheduler(void)
     sti();
     if(SCHEDFLAG==4){
             if(!isEmpty1()){
-                    float min=FLT_MAX;
-            float ppr;
-            struct proc* q;
-            acquire(&ptable.lock);
-            for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-            if(p->state != RUNNABLE)
-                continue;
-            if(ticks==p->ctime){
-                ppr=9999;
-            }else{
-                ppr=p->rtime/(ticks-p->ctime);
-            }
-            if(ppr<=min){
-                q=p;
-                min=ppr;
-            }
-            }
-            proc = q;
-            switchuvm(q);
-            q->state = RUNNING;
-            swtch(&cpu->scheduler, q->context);
-            switchkvm();
-            proc=0;
+                acquire(&ptable.lock);
+                for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+                    if(ticks == p->ctime)
+                        p->cptime = 99999;
+                    else
+                        p->cptime = p->rtime/(ticks - p->cptime);
+                }
+                release(&ptable.lock);
+                struct proc * minprocess = ptable.proc;
+                float mincpt = 99999;
+                acquire(&ptable.lock);
+                for(p = ptable.proc; p < &ptable.proc[NPROC] && isIncluded1(p); p++){
+                    if (p->state != RUNNABLE)
+                        continue;
+                    if(p->cptime <= mincpt){
+                        minprocess = p;
+                        mincpt = p->cptime;
+                    }
+                }
+                if(minprocess->state == RUNNABLE){
+                    proc = minprocess;
+                    switchuvm(minprocess);
+                    minprocess->state = RUNNING;
+                    swtch(&cpu->scheduler, minprocess->context);
+                    switchkvm();
+                    proc = 0;
+                }
+                release(&ptable.lock);
 
+                /*float min=FLT_MAX;
+                float ppr;
+                struct proc* q;
+                acquire(&ptable.lock);
+                for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+                    if(p->state != RUNNABLE)
+                        continue;
+                if(ticks==p->ctime){
+                ppr=9999;
+                }else{
+                    ppr=p->rtime/(ticks-p->ctime);
+                }
+                if(ppr<=min){
+                    q=p;
+                    min=ppr;
+                }
+                }
+                proc = q;
+                switchuvm(q);
+                q->state = RUNNING;
+                swtch(&cpu->scheduler, q->context);
+                switchkvm();
+                proc=0;
+                */
             }else if(!isEmpty2()){
                 acquire(&ptable.lock);
                 for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
@@ -562,7 +617,37 @@ scheduler(void)
             }
     }
     else if(SCHEDFLAG==3){
-            float min=FLT_MAX;
+
+            acquire(&ptable.lock);
+                for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+                    if(ticks == p->ctime)
+                        p->cptime = 99999;
+                    else
+                        p->cptime = p->rtime/(ticks - p->cptime);
+                }
+                release(&ptable.lock);
+                struct proc * minprocess = ptable.proc;
+                float mincpt = 99999;
+                acquire(&ptable.lock);
+                for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+                    if (p->state != RUNNABLE)
+                        continue;
+                    if(p->cptime <= mincpt){
+                        minprocess = p;
+                        mincpt = p->cptime;
+                    }
+                }
+                if(minprocess->state == RUNNABLE){
+                    proc = minprocess;
+                    switchuvm(minprocess);
+                    minprocess->state = RUNNING;
+                    swtch(&cpu->scheduler, minprocess->context);
+                    switchkvm();
+                    proc = 0;
+                }
+
+
+            /*float min=FLT_MAX;
             float ppr;
             struct proc* q;
             acquire(&ptable.lock);
@@ -586,7 +671,7 @@ scheduler(void)
             swtch(&cpu->scheduler, q->context);
             switchkvm();
             proc=0;
-
+            */
     }else{
     // Loop over process table looking for process to run.
         acquire(&ptable.lock);
@@ -664,6 +749,13 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
   proc->state = RUNNABLE;
+  if(proc->p_level == high){
+    insert1(proc);
+  }else if(proc->p_level == middle){
+      insert2(proc);
+  }else{
+      insert3(proc);
+  }
   insert(proc);
   sched();
   release(&ptable.lock);
@@ -737,7 +829,14 @@ wakeup1(void *chan)
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == SLEEPING && p->chan == chan){
-      p->state = RUNNABLE;
+        p->state = RUNNABLE;
+        if(p->p_level == high){
+            insert1(p);
+        }else if(p->p_level == middle){
+            insert2(p);
+        }else{
+            insert3(p);
+        }
         insert(p);
     }
 }
@@ -766,6 +865,13 @@ kill(int pid)
       // Wake process from sleep if necessary.
       if(p->state == SLEEPING){
         p->state = RUNNABLE;
+        if(p->p_level == high){
+            insert1(p);
+        }else if(p->p_level == middle){
+            insert2(p);
+        }else{
+            insert3(p);
+        }
         insert(p);
       }
       release(&ptable.lock);

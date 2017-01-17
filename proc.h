@@ -64,7 +64,7 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
-	int ctime,etime,rtime;
+	int ctime,etime,rtime,cptime;
 	enum prlevel p_level;
 
 };
