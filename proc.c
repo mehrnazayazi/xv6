@@ -157,6 +157,14 @@ bool isFull2() {
 int size2() {
    return itemCount2;
 }
+bool isIncluded2(struct proc* p){
+    int i;
+    for(i=0;i<size2();i++){
+        if(p==q2[i])
+            return true;
+    }
+    return false;
+}
 
 void insert2(struct proc* data) {
 
@@ -208,6 +216,14 @@ bool isFull3() {
 
 int size3() {
    return itemCount3;
+}
+bool isIncluded3(struct proc* p){
+    int i;
+    for(i=0;i<size3();i++){
+        if(p==q3[i])
+            return true;
+    }
+    return false;
 }
 
 void insert3(struct proc* data) {
@@ -533,7 +549,7 @@ scheduler(void)
                 struct proc * minprocess = ptable.proc;
                 float mincpt = 99999;
                 //acquire(&ptable.lock);
-                for(p = ptable.proc; p < &ptable.proc[NPROC] /*&& isIncluded1(p)*/; p++){
+                for(p = ptable.proc; p < &ptable.proc[NPROC] && isIncluded1(p); p++){
                     if (p->state != RUNNABLE)
                         continue;
                     if(p->cptime <= mincpt){
@@ -578,7 +594,7 @@ scheduler(void)
 
                 else if(!isEmpty2()){
                // acquire(&ptable.lock);
-                for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+                for(p = ptable.proc; p < &ptable.proc[NPROC] && isIncluded2(p); p++){
                 if(p->state != RUNNABLE)
                     continue;
                 if(SCHEDFLAG==2){
@@ -600,6 +616,21 @@ scheduler(void)
 
 
             }else{
+                 for(p = ptable.proc; p < &ptable.proc[NPROC] && isIncluded3(p); p++){
+            if(p->state != RUNNABLE)
+                continue;
+            proc = p;
+            switchuvm(p);
+            p->state = RUNNING;
+        //if(!isEmpty())
+        //removeData();
+            swtch(&cpu->scheduler, p->context);
+            switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+            proc = 0;
+                 }
 
             }
     }
