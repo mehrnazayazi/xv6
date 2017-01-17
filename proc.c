@@ -7,29 +7,13 @@
 #include "proc.h"
 #include "spinlock.h"
 
+#include <stdbool.h>
+#include <float.h>
+
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
 } ptable;
-
-struct proc* q[64];
-int qend=0;
-void pushq(struct proc *p){
-	q[qend]=p;
-	qend++;
-}
-struct proc* popq(){
-	struct proc *p=q[0];
-	for(int i=1;i<qend;i++){
-		q[i-1]=q[i];
-
-	}
-qend--;
-	return p;
-}
-struct proc* qfront(){
-    return q[0];
-}
 
 static struct proc *initproc;
 
@@ -38,6 +22,218 @@ extern void forkret(void);
 extern void trapret(void);
 
 static void wakeup1(void *chan);
+
+
+
+
+
+
+struct proc* intArray[NPROC];
+int front = 0;
+int rear = -1;
+int itemCount = 0;
+
+struct proc* peek() {
+   return intArray[front];
+}
+
+bool isEmpty() {
+   return itemCount == 0;
+}
+
+bool isFull() {
+   return itemCount == NPROC;
+}
+
+int size() {
+   return itemCount;
+}
+
+void insert(struct proc* data) {
+
+   if(!isFull()) {
+
+      if(rear == NPROC-1) {
+         rear = -1;
+      }
+
+      intArray[++rear] = data;
+      itemCount++;
+   }
+}
+
+struct proc* removeData() {
+   struct proc* data = intArray[front++];
+
+   if(front == NPROC) {
+      front = 0;
+   }
+
+   itemCount--;
+   return data;
+}
+
+
+
+
+
+
+
+
+
+struct proc* q1[NPROC];
+int front1 = 0;
+int rear1 = -1;
+int itemCount1 = 0;
+
+struct proc* peek1() {
+   return q1[front1];
+}
+
+bool isEmpty1() {
+   return itemCount1 == 0;
+}
+
+bool isFull1() {
+   return itemCount1 == NPROC;
+}
+
+int size1() {
+   return itemCount1;
+}
+
+void insert1(struct proc* data) {
+
+   if(!isFull1()) {
+
+      if(rear1 == NPROC-1) {
+         rear1 = -1;
+      }
+
+      q1[++rear1] = data;
+      itemCount1++;
+   }
+}
+
+struct proc* removeData1() {
+   struct proc* data = q1[front1++];
+
+   if(front1 == NPROC) {
+      front1 = 0;
+   }
+
+   itemCount1--;
+   return data;
+}
+
+
+
+struct proc* q2[NPROC];
+int front2 = 0;
+int rear2 = -1;
+int itemCount2 = 0;
+
+struct proc* peek2() {
+   return q2[front2];
+}
+
+bool isEmpty2() {
+   return itemCount2 == 0;
+}
+
+bool isFull2() {
+   return itemCount2 == NPROC;
+}
+
+int size2() {
+   return itemCount2;
+}
+
+void insert2(struct proc* data) {
+
+   if(!isFull2()) {
+
+      if(rear2 == NPROC-1) {
+         rear2 = -1;
+      }
+
+      q2[++rear2] = data;
+      itemCount2++;
+   }
+}
+
+struct proc* removeData2() {
+   struct proc* data = q2[front2++];
+
+   if(front2 == NPROC) {
+      front2 = 0;
+   }
+
+   itemCount2--;
+   return data;
+}
+
+
+
+
+
+
+
+
+struct proc* q3[NPROC];
+int front3 = 0;
+int rear3 = -1;
+int itemCount3 = 0;
+
+struct proc* peek3() {
+   return q3[front3];
+}
+
+bool isEmpty3() {
+   return itemCount3 == 0;
+}
+
+bool isFull3() {
+   return itemCount3 == NPROC;
+}
+
+int size3() {
+   return itemCount3;
+}
+
+void insert3(struct proc* data) {
+
+   if(!isFull3()) {
+
+      if(rear3 == NPROC-1) {
+         rear3 = -1;
+      }
+
+      q1[++rear3] = data;
+      itemCount3++;
+   }
+}
+
+struct proc* removeData3() {
+   struct proc* data = q3[front1++];
+
+   if(front3 == NPROC) {
+      front3 = 0;
+   }
+
+   itemCount3--;
+   return data;
+}
+
+
+
+
+
+
+
+
+
+
 
 void
 pinit(void)
@@ -91,11 +287,10 @@ found:
   p->context = (struct context*)sp;
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
-	 p->ctime = ticks;         // start time
+
+  p->ctime = ticks;         // start time
   p->etime = 0;             // end time
   p->rtime = 0;             // run time
-	pushq(p);
-
 
 
 
@@ -136,7 +331,7 @@ userinit(void)
   acquire(&ptable.lock);
 
   p->state = RUNNABLE;
-  pushq(p);
+  insert(p);
 
   release(&ptable.lock);
 }
@@ -201,7 +396,7 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
-  pushq(np);
+  insert(np);
 
   release(&ptable.lock);
 
@@ -295,43 +490,7 @@ wait(void)
     sleep(proc, &ptable.lock);  //DOC: wait-sleep
   }
 }
-int
-waitx(int *wtime, int *rtime)
-{
-  struct proc *p;
-  int  pid;
 
-  acquire(&ptable.lock);
-  for(;;){
-    // Scan through table looking for zombie children.
-    //havekids = 0;
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->parent != proc)
-        continue;
-     // havekids = 1;
-      if(p->state == ZOMBIE){
-        // Found one.
-
-        // Added time field update, else same from wait system call
-        *wtime = p->etime - p->ctime - p->rtime;
-        *rtime = p->rtime;
-
-        // same as wait
-        pid = p->pid;
-        kfree(p->kstack);
-        p->kstack = 0;
-        freevm(p->pgdir);
-        p->state = UNUSED;
-        p->pid = 0;
-        p->parent = 0;
-        p->name[0] = 0;
-        p->killed = 0;
-        release(&ptable.lock);
-        return pid;
-      }
-    }}
-//return 0;
-}
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
@@ -346,62 +505,78 @@ scheduler(void)
   struct proc *p;
 
   for(;;){
-
     // Enable interrupts on this processor.
     sti();
+    if(SCHEDFLAG==4){
 
+    }
+    else if(SCHEDFLAG==3){
+            float min=FLT_MAX;
+            float ppr;
+            struct proc* q;
+            acquire(&ptable.lock);
+         for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+            if(p->state != RUNNABLE || (ticks==p->ctime))
+                continue;
+
+            ppr=p->rtime/(ticks-p->ctime);
+            if(ppr<min){
+                q=p;
+                min=ppr;
+            }
+         }
+      proc = q;
+      switchuvm(q);
+      p->state = RUNNING;
+      //if(!isEmpty())
+      //removeData();
+      swtch(&cpu->scheduler, q->context);
+      switchkvm();
+      proc=0;
+
+    }else{
     // Loop over process table looking for process to run.
-    if(SCHEDFLAG == 1){
-    acquire(&ptable.lock);
+        acquire(&ptable.lock);
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE || ticks%QUANTA!=0)
-        continue;
+        if(p->state != RUNNABLE)
+            continue;
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
-      proc = p;
-
-      switchuvm(p);
-      p->state = RUNNING;
-      swtch(&cpu->scheduler, p->context);
-      switchkvm();
-
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      proc = 0;
-    }
-    release(&ptable.lock);
-    }
-    if(SCHEDFLAG == 2){
-        acquire(&ptable.lock);
-         for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-            if(p->state != RUNNABLE || ticks%QUANTA!=0)
-                continue;
-        p=popq();
-
-
-
-
+        if(SCHEDFLAG==1 && ticks%QUANTA==0){
         proc = p;
         switchuvm(p);
         p->state = RUNNING;
-         pushq(p);
+      //if(!isEmpty())
+      //removeData();
         swtch(&cpu->scheduler, p->context);
         switchkvm();
+
       // Process is done running for now.
       // It should have changed its p->state before coming back.
         proc = 0;
+        }else if(SCHEDFLAG==2){
+            if(isEmpty() || p!=peek())
+                continue;
+            proc = p;
+            switchuvm(p);
+            p->state = RUNNING;
+            removeData();
+            swtch(&cpu->scheduler, p->context);
+            switchkvm();
+            proc=0;
+        /*if(p->state==RUNNABLE){
+            insert(p);
+        }*/
 
-
-         }
-         release(&ptable.lock);
-
+            }
+        }
     }
+    release(&ptable.lock);
 
   }
 }
-
 
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state. Saves and restores
@@ -419,8 +594,10 @@ sched(void)
     panic("sched ptable.lock");
   if(cpu->ncli != 1)
     panic("sched locks");
-  if(proc->state == RUNNING)
+  if(proc->state == RUNNING){
     panic("sched running");
+    //removeData();
+  }
   if(readeflags()&FL_IF)
     panic("sched interruptible");
   intena = cpu->intena;
@@ -434,7 +611,7 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
   proc->state = RUNNABLE;
-  pushq(proc);
+  insert(proc);
   sched();
   release(&ptable.lock);
 }
@@ -506,9 +683,10 @@ wakeup1(void *chan)
   struct proc *p;
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if(p->state == SLEEPING && p->chan == chan)
+    if(p->state == SLEEPING && p->chan == chan){
       p->state = RUNNABLE;
-      pushq(p);
+        insert(p);
+    }
 }
 
 // Wake up all processes sleeping on chan.
@@ -535,8 +713,8 @@ kill(int pid)
       // Wake process from sleep if necessary.
       if(p->state == SLEEPING){
         p->state = RUNNABLE;
-        pushq(p);
-        }
+        insert(p);
+      }
       release(&ptable.lock);
       return 0;
     }
@@ -579,5 +757,54 @@ procdump(void)
         cprintf(" %p", pc[i]);
     }
     cprintf("\n");
+  }
+}
+
+
+
+int
+getPerformanceData(int *wtime, int *rtime)
+{
+  struct proc *p;
+  int havekids, pid;
+
+  acquire(&ptable.lock);
+  for(;;){
+    // Scan through table looking for zombie children.
+    havekids = 0;
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->parent != proc)
+        continue;
+      havekids = 1;
+      if(p->state == ZOMBIE){
+        // Found one.
+
+        // Added time field update, else same from wait system call
+        *wtime = p->etime - p->ctime - p->rtime;
+        *rtime = p->rtime;
+
+        // same as wait
+        pid = p->pid;
+        kfree(p->kstack);
+        p->kstack = 0;
+        freevm(p->pgdir);
+        p->state = UNUSED;
+        p->pid = 0;
+        p->parent = 0;
+        p->name[0] = 0;
+        p->killed = 0;
+        release(&ptable.lock);
+        return pid;
+      }
+    }
+
+    // No point waiting if we don't have any children.
+    if(!havekids || proc->killed){
+      release(&ptable.lock);
+      return -1;
+    }
+
+    // Wait for children to exit.  (See wakeup1 call in proc_exit.)
+    sleep(proc, &ptable.lock);  //DOC: wait-sleep
   }
 }

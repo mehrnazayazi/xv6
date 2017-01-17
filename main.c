@@ -18,12 +18,15 @@ int
 main(void)
 {
   kinit1(end, P2V(4*1024*1024)); // phys page allocator
-  kvmalloc();      // kernel page table
-  mpinit();        // detect other processors
+  kvmalloc();
+  cprintf("after scheduler\n") ;     // kernel page table
+  mpinit();
+        // detect other processors
   lapicinit();     // interrupt controller
   seginit();       // segment descriptors
   cprintf("\ncpu%d: starting xv6\n\n", cpunum());
-  picinit();       // another interrupt controller
+  picinit();
+  //cprintf("after");      // another interrupt controller
   ioapicinit();    // another interrupt controller
   consoleinit();   // console hardware
   uartinit();      // serial port
