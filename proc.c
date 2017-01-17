@@ -574,10 +574,10 @@ scheduler(void)
                 switchkvm();
                 proc=0;
                 */
-            }else{
+            }
 
-                }/*else if(!isEmpty2()){
-                acquire(&ptable.lock);
+                else if(!isEmpty2()){
+               // acquire(&ptable.lock);
                 for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
                 if(p->state != RUNNABLE)
                     continue;
@@ -601,7 +601,7 @@ scheduler(void)
 
             }else{
 
-            }*/
+            }
     }
     else if(SCHEDFLAG==3){
 
