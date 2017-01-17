@@ -116,15 +116,12 @@ bool isIncluded1(struct proc* p){
 
 void insert1(struct proc* data) {
 
-   if(!isFull1()) {
+    if(rear1 == NPROC-1) {
+        rear1 = -1;
+    }
 
-      if(rear1 == NPROC-1) {
-         rear1 = -1;
-      }
-
-      q1[++rear1] = data;
-      itemCount11++;
-   }
+    q1[++rear1] = data;
+    itemCount11++;
 }
 
 struct proc* removeData1() {
@@ -237,16 +234,6 @@ struct proc* removeData3() {
    return data;
 }
 
-
-
-
-
-
-
-
-
-
-
 void
 pinit(void)
 {
@@ -267,9 +254,6 @@ allocproc(void)
   acquire(&ptable.lock);
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-p->p_level=high;
-insert1(p);
-
     if(p->state == UNUSED)
       goto found;
   }
@@ -306,15 +290,7 @@ found:
   p->ctime = ticks;         // start time
   p->etime = 0;             // end time
   p->rtime = 0;             // run time
-  p->p_level=high;
-  if(p->p_level==high){
-    cprintf("high\n");
-  }
-  else{
-    cprintf("nothing\n");
-  }
-
-
+  p->p_level = high;
 
   return p;
 }
@@ -328,6 +304,9 @@ userinit(void)
   extern char _binary_initcode_start[], _binary_initcode_size[];
 
   p = allocproc();
+  p->p_level=high;
+  cprintf("First user process was initiated\n");
+  insert1(p);
 
   initproc = p;
   if((p->pgdir = setupkvm()) == 0)
@@ -353,13 +332,6 @@ userinit(void)
   acquire(&ptable.lock);
 
   p->state = RUNNABLE;
-  if(p->p_level == high){
-    insert1(p);
-  }else if(p->p_level == middle){
-      insert2(p);
-  }else{
-      insert3(p);
-  }
   insert(p);
 
   release(&ptable.lock);
@@ -391,6 +363,8 @@ growproc(int n)
 int
 fork(void)
 {
+
+  cprintf("Start our fork code\n");
   int i, pid;
   struct proc *np;
 
@@ -425,16 +399,18 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
-  if(np->p_level == high){
-    insert1(np);
-  }else if(np->p_level == middle){
-      insert2(np);
-  }else{
-      insert3(np);
-  }
   insert(np);
 
   release(&ptable.lock);
+
+  if(np->p_level == high){
+    insert1(np);
+  }else if(np->p_level == middle){
+    insert2(np);
+  }else{
+    insert3(np);
+  }
+  cprintf("Using fork for creating process\n");
 
   return pid;
 }
@@ -543,22 +519,20 @@ scheduler(void)
   for(;;){
     // Enable interrupts on this processor.
     sti();
+    acquire(&ptable.lock);
     if(SCHEDFLAG==4){
-        cprintf("in four");
-            cprintf(isEmpty1() ? "true" : "false");
             if(!isEmpty1()){
-                cprintf("in f");
-                acquire(&ptable.lock);
+                //acquire(&ptable.lock);
                 for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
                     if(ticks == p->ctime)
                         p->cptime = 99999;
                     else
                         p->cptime = p->rtime/(ticks - p->cptime);
                 }
-                release(&ptable.lock);
+                //release(&ptable.lock);
                 struct proc * minprocess = ptable.proc;
                 float mincpt = 99999;
-                acquire(&ptable.lock);
+                //acquire(&ptable.lock);
                 for(p = ptable.proc; p < &ptable.proc[NPROC] /*&& isIncluded1(p)*/; p++){
                     if (p->state != RUNNABLE)
                         continue;
@@ -567,6 +541,7 @@ scheduler(void)
                         mincpt = p->cptime;
                     }
                 }
+                //release(&ptable.lock);
                 if(minprocess->state == RUNNABLE){
                     proc = minprocess;
                     switchuvm(minprocess);
@@ -575,8 +550,6 @@ scheduler(void)
                     switchkvm();
                     proc = 0;
                 }
-                release(&ptable.lock);
-
                 /*float min=FLT_MAX;
                 float ppr;
                 struct proc* q;
@@ -602,7 +575,7 @@ scheduler(void)
                 proc=0;
                 */
             }else{
-                    cprintf("in else");
+
                 }/*else if(!isEmpty2()){
                 acquire(&ptable.lock);
                 for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
@@ -632,17 +605,17 @@ scheduler(void)
     }
     else if(SCHEDFLAG==3){
 
-            acquire(&ptable.lock);
+            //acquire(&ptable.lock);
                 for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
                     if(ticks == p->ctime)
                         p->cptime = 99999;
                     else
                         p->cptime = p->rtime/(ticks - p->cptime);
                 }
-                release(&ptable.lock);
+                //release(&ptable.lock);
                 struct proc * minprocess = ptable.proc;
                 float mincpt = 99999;
-                acquire(&ptable.lock);
+                //acquire(&ptable.lock);
                 for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
                     if (p->state != RUNNABLE)
                         continue;
@@ -651,6 +624,7 @@ scheduler(void)
                         mincpt = p->cptime;
                     }
                 }
+                //release(&ptable.lock);
                 if(minprocess->state == RUNNABLE){
                     proc = minprocess;
                     switchuvm(minprocess);
@@ -659,7 +633,6 @@ scheduler(void)
                     switchkvm();
                     proc = 0;
                 }
-
 
             /*float min=FLT_MAX;
             float ppr;
@@ -688,7 +661,7 @@ scheduler(void)
             */
     }else{
     // Loop over process table looking for process to run.
-        acquire(&ptable.lock);
+        //acquire(&ptable.lock);
         for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
             if(p->state != RUNNABLE)
                 continue;
@@ -724,9 +697,9 @@ scheduler(void)
 
             }
         }
+    //release(&ptable.lock);
     }
-    release(&ptable.lock);
-
+release(&ptable.lock);
   }
 }
 
