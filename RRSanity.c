@@ -1,40 +1,37 @@
-#include <stdio.h>
-#include "types.h"
-#include "defs.h"
-#include "param.h"
-#include "memlayout.h"
-#include "mmu.h"
-#include "proc.h"
-#include "x86.h"
-#include <sys/types.h>
-#include <unistd.h>
 #include "types.h"
 #include "stat.h"
 #include "user.h"
 
-
-void printer() {
-
+void print() {
+    int k;
+    //int sizeOfArray = 100;
     printf(1, "\n");
-    for (int j=0;j<1000;j++){
-        printf(2, "Child %d prints for the %d time.\n",getpid(),j);
+    for (k=0;k<1000;k++){
+        printf(2, "Child %d baraye bare %d chap mishavad.\n",getpid(),i);
     }
+}
 
-main(){
+void test(void) {
+    //int numberOfForks = 10;
+    int wTime[10];
+    int rTime[10];
+    int Id;
 
-    pid_t pid;
-
-    for(int i=0;i<10;i++){
-        pid = fork();
-        if(pid == 0){
-            printer();
+    int i;
+    for (i=0;i<10;i++){
+        Id = fork();
+        if(Id == 0) {
+            print();
             exit();
         }
-
     }
     while(wait() > 0){
-        printf(2, "PID : %d - Wait time : %d - Running time : %d - Turn Around time : %d.\n", getyear(&wTime[i], &rTime[i]), wTime[i], rTime[i], rTime[i] + wTime[i]);
+            if(i<10)
+        printf(2, "PID : %d -run time : %d - turn around time : %d - waiting time : %d.\n",getyear(&wTime[i],&rTime[i]),rTime[i],rTime[i]+wTime[i],wTime[i]);
     }
+}
 
-
+int main(void) {
+    test();
+    exit();
 }
