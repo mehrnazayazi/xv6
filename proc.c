@@ -509,7 +509,57 @@ scheduler(void)
     // Enable interrupts on this processor.
     sti();
     if(SCHEDFLAG==4){
+            if(!isEmpty1()){
+                    float min=FLT_MAX;
+            float ppr;
+            struct proc* q;
+            acquire(&ptable.lock);
+            for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+            if(p->state != RUNNABLE)
+                continue;
+            if(ticks==p->ctime){
+                ppr=9999;
+            }else{
+                ppr=p->rtime/(ticks-p->ctime);
+            }
+            if(ppr<=min){
+                q=p;
+                min=ppr;
+            }
+            }
+            proc = q;
+            switchuvm(q);
+            q->state = RUNNING;
+            swtch(&cpu->scheduler, q->context);
+            switchkvm();
+            proc=0;
 
+            }else if(!isEmpty2()){
+                acquire(&ptable.lock);
+                for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+                if(p->state != RUNNABLE)
+                    continue;
+                if(SCHEDFLAG==2){
+                    if(isEmpty() || p!=peek())
+                        continue;
+                proc = p;
+                switchuvm(p);
+                p->state = RUNNING;
+                removeData();
+                swtch(&cpu->scheduler, p->context);
+                switchkvm();
+                proc=0;
+        /*if(p->state==RUNNABLE){
+            insert(p);
+        }*/
+
+                }
+            }
+
+
+            }else{
+
+            }
     }
     else if(SCHEDFLAG==3){
             float min=FLT_MAX;
@@ -540,9 +590,9 @@ scheduler(void)
     }else{
     // Loop over process table looking for process to run.
         acquire(&ptable.lock);
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-        if(p->state != RUNNABLE)
-            continue;
+        for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+            if(p->state != RUNNABLE)
+                continue;
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
