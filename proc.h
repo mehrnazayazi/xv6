@@ -47,6 +47,7 @@ struct context {
 };
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
+enum prlevel { high, middle, low };
 
 // Per-process state
 struct proc {
@@ -64,6 +65,7 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
 	int ctime,etime,rtime;
+	enum prlevel p_level;
 
 };
 

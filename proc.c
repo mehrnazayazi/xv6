@@ -291,6 +291,7 @@ found:
   p->ctime = ticks;         // start time
   p->etime = 0;             // end time
   p->rtime = 0;             // run time
+  p->p_level=high;
 
 
 
@@ -516,23 +517,25 @@ scheduler(void)
             struct proc* q;
             acquire(&ptable.lock);
          for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-            if(p->state != RUNNABLE || (ticks==p->ctime))
+            if(p->state != RUNNABLE)
                 continue;
-
+        if(ticks==p->ctime){
+            ppr=9999;
+        }else{
             ppr=p->rtime/(ticks-p->ctime);
-            if(ppr<min){
+            }
+            if(ppr<=min){
                 q=p;
                 min=ppr;
             }
+
          }
-      proc = q;
-      switchuvm(q);
-      p->state = RUNNING;
-      //if(!isEmpty())
-      //removeData();
-      swtch(&cpu->scheduler, q->context);
-      switchkvm();
-      proc=0;
+            proc = q;
+            switchuvm(q);
+            q->state = RUNNING;
+            swtch(&cpu->scheduler, q->context);
+            switchkvm();
+            proc=0;
 
     }else{
     // Loop over process table looking for process to run.

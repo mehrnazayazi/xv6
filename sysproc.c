@@ -94,13 +94,13 @@ sys_getyear(void)
 {
     /*int *wtime;
   int *rtime;
-  
+
   if(argptr(0, (char**)&wtime, sizeof(int)) < 0)
     return -1;
 
   if(argptr(1, (char**)&rtime, sizeof(int)) < 0)
     return -1;
-	
+
 int a = waitx(wtime, rtime);
 	 return a;*/
 
@@ -118,4 +118,15 @@ return 0;
 
 
 
+}
+int SYS_nice(void){
+    if(proc->p_level==high){
+        proc->p_level=middle;
+        return 0;
+    }
+    if(proc->p_level==middle){
+        proc->p_level=low;
+        return 0;
+    }
+    return -1;
 }
