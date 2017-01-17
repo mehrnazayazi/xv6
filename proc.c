@@ -84,7 +84,7 @@ struct proc* removeData() {
 struct proc* q1[NPROC];
 int front1 = 0;
 int rear1 = -1;
-int itemCount1 = 0;
+int itemCount11 = 0;
 
 struct proc* peek1() {
    return q1[front1];
@@ -93,15 +93,15 @@ struct proc* peek1() {
 
 
 bool isEmpty1() {
-   return itemCount1 == 0;
+   return itemCount11 == 0;
 }
 
 bool isFull1() {
-   return itemCount1 == NPROC;
+   return itemCount11 == NPROC;
 }
 
 int size1() {
-   return itemCount1;
+   return itemCount11;
 }
 
 
@@ -123,7 +123,7 @@ void insert1(struct proc* data) {
       }
 
       q1[++rear1] = data;
-      itemCount1++;
+      itemCount11++;
    }
 }
 
@@ -134,7 +134,7 @@ struct proc* removeData1() {
       front1 = 0;
    }
 
-   itemCount1--;
+   itemCount11--;
    return data;
 }
 
@@ -266,10 +266,13 @@ allocproc(void)
 
   acquire(&ptable.lock);
 
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+p->p_level=high;
+insert1(p);
+
     if(p->state == UNUSED)
       goto found;
-
+  }
   release(&ptable.lock);
   return 0;
 
@@ -304,6 +307,12 @@ found:
   p->etime = 0;             // end time
   p->rtime = 0;             // run time
   p->p_level=high;
+  if(p->p_level==high){
+    cprintf("high\n");
+  }
+  else{
+    cprintf("nothing\n");
+  }
 
 
 
@@ -535,7 +544,10 @@ scheduler(void)
     // Enable interrupts on this processor.
     sti();
     if(SCHEDFLAG==4){
+        cprintf("in four");
+            cprintf(isEmpty1() ? "true" : "false");
             if(!isEmpty1()){
+                cprintf("in f");
                 acquire(&ptable.lock);
                 for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
                     if(ticks == p->ctime)
@@ -547,7 +559,7 @@ scheduler(void)
                 struct proc * minprocess = ptable.proc;
                 float mincpt = 99999;
                 acquire(&ptable.lock);
-                for(p = ptable.proc; p < &ptable.proc[NPROC] && isIncluded1(p); p++){
+                for(p = ptable.proc; p < &ptable.proc[NPROC] /*&& isIncluded1(p)*/; p++){
                     if (p->state != RUNNABLE)
                         continue;
                     if(p->cptime <= mincpt){
@@ -589,7 +601,9 @@ scheduler(void)
                 switchkvm();
                 proc=0;
                 */
-            }else if(!isEmpty2()){
+            }else{
+                    cprintf("in else");
+                }/*else if(!isEmpty2()){
                 acquire(&ptable.lock);
                 for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
                 if(p->state != RUNNABLE)
@@ -604,9 +618,9 @@ scheduler(void)
                 swtch(&cpu->scheduler, p->context);
                 switchkvm();
                 proc=0;
-        /*if(p->state==RUNNABLE){
+        if(p->state==RUNNABLE){
             insert(p);
-        }*/
+        }
 
                 }
             }
@@ -614,7 +628,7 @@ scheduler(void)
 
             }else{
 
-            }
+            }*/
     }
     else if(SCHEDFLAG==3){
 
@@ -682,7 +696,7 @@ scheduler(void)
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
-        if(SCHEDFLAG==1 && ticks%QUANTA==0){
+        if(SCHEDFLAG==1 ){
         proc = p;
         switchuvm(p);
         p->state = RUNNING;
@@ -746,15 +760,19 @@ sched(void)
 // Give up the CPU for one scheduling round.
 void
 yield(void)
-{
+{   cprintf("yield\n");
   acquire(&ptable.lock);  //DOC: yieldlock
   proc->state = RUNNABLE;
+  //cprintf(proc->p_level);
   if(proc->p_level == high){
+        cprintf("high\n");
     insert1(proc);
   }else if(proc->p_level == middle){
       insert2(proc);
+   cprintf("moddle\n");
   }else{
       insert3(proc);
+       cprintf("low\n");
   }
   insert(proc);
   sched();
