@@ -472,6 +472,7 @@ exit(void)
 
   // Jump into the scheduler, never to return.
   proc->state = ZOMBIE;
+   proc->etime = ticks;
   sched();
   panic("zombie exit");
 }
