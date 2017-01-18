@@ -7,7 +7,7 @@ void print() {
     //int sizeOfArray = 100;
     printf(1, "\n");
     for (k=0;k<1000;k++){
-        printf(2, "Child %d baraye bare %d chap mishavad.\n",getpid(),i);
+        printf(2, "Child %d baraye bare %d chap mishavad.\n",getpid(),k);
     }
 }
 

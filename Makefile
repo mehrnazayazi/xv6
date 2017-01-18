@@ -185,6 +185,8 @@ UPROGS=\
 	_a\
     _RRSanity\
     _FRRSanity\
+    _Sanity\
+    _GSanity\
 
 
 
@@ -256,7 +258,7 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
 EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
 	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c\
-	a.c\RRSanity.c\FRRSanity.c\
+	a.c\RRSanity.c\FRRSanity.c\Sanity.c\GSanity.c\
 	printf.c umalloc.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
